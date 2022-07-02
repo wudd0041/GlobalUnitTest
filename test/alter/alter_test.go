@@ -9,6 +9,7 @@ import (
 	"gopkg.in/gorp.v1"
 	"license_testing/services/license"
 	"license_testing/utils/uuid"
+	"strings"
 	"testing"
 )
 
@@ -215,7 +216,7 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 			suite.orgIds[0],
 			licenseType,
 			exitLicenseAlter.EditionName,
-			[]*license.LicenseAlter{exitLicenseAlter},
+			exitLicenseAlter,
 		},
 		"传入错误的组织id，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
@@ -242,7 +243,11 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 
 	for name, tc := range data_suite {
 		licenseAlters, _ := license.ListLicenseAltersByOrgUUIDAndTypeEdition(tc.sql, tc.orgUUID, tc.licenseType, tc.edition)
-		assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
+		if strings.Contains(name, "成功") {
+			assert.Contains(suite.T(), licenseAlters, exitLicenseAlter, name)
+		} else {
+			assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
+		}
 	}
 
 }
