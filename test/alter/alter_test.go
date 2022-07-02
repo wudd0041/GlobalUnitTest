@@ -9,7 +9,6 @@ import (
 	"gopkg.in/gorp.v1"
 	"license_testing/services/license"
 	"license_testing/utils/uuid"
-	"strings"
 	"testing"
 )
 
@@ -70,10 +69,10 @@ func (suite *testSuite) BatchInsertLicense() ([]string, error) {
 	orgId1 := uuid.UUID()
 	orgId2 := uuid.UUID()
 	orgIds := []string{orgId1, orgId2}
-	l1 := orgLicense{orgId1, 1, "enterprise-trail", 0, 100, -1, 1655714729}
-	l2 := orgLicense{orgId1, 2, "enterprise-trail", 0, 100, -1, 1655714729}
-	l3 := orgLicense{orgId2, 1, "enterprise-trail", 0, 100, -1, 1655714729}
-	l4 := orgLicense{orgId2, 2, "enterprise-trail", 0, 100, -1, 1655714729}
+	l1 := orgLicense{orgId1, 1, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l2 := orgLicense{orgId1, 2, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l3 := orgLicense{orgId2, 1, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l4 := orgLicense{orgId2, 2, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
 	license := []*orgLicense{&l1, &l2, &l3, &l4}
 	_, err := suite.db.NamedExec("INSERT INTO license (org_uuid,type,edition,add_type,scale,expire_time,update_time) "+
 		"VALUES (:org_uuid,:type,:edition,:add_type,:scale,:expire_time,:update_time)", license)
@@ -103,10 +102,10 @@ func (suite *testSuite) TestMapLicenseAltersByUUIDs() {
 			[]string{exitUUID},
 			map[string]*license.LicenseAlter{exitUUID: exitLicenseAlter},
 		},
-		"传入不存在的alterUUID，查询alter记录：返回nil": {
+		"传入不存在的alterUUID，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			[]string{"1234auto"},
-			nil,
+			map[string]*license.LicenseAlter{},
 		},
 	}
 
@@ -140,10 +139,10 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUID() {
 			suite.orgIds[0],
 			orgLicenseAlters,
 		},
-		"传入错误的组织id，查询alter记录：返回nil": {
+		"传入错误的组织id，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			"123auto",
-			nil,
+			[]*license.LicenseAlter{},
 		},
 	}
 
@@ -173,28 +172,24 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndType() {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			exitLicenseAlter.LicenseType,
-			exitLicenseAlter,
+			[]*license.LicenseAlter{exitLicenseAlter},
 		},
-		"传入错误的组织id，查询alter记录：返回nil": {
+		"传入错误的组织id，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			"123",
 			exitLicenseAlter.LicenseType,
-			nil,
-		}, "传入错误的licenseType，查询alter记录：返回nil": {
+			[]*license.LicenseAlter{},
+		}, "传入错误的licenseType，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
-			nil,
+			[]*license.LicenseAlter{},
 		},
 	}
 
 	for name, tc := range data_suite {
 		licenseAlters, _ := license.ListLicenseAltersByOrgUUIDAndType(tc.sql, tc.orgUUID, tc.licenseType)
-		if strings.Contains(name, "成功") {
-			assert.Contains(suite.T(), licenseAlters, tc.expected, name)
-		} else if strings.Contains(name, "nil") {
-			assert.Nil(suite.T(), licenseAlters, name)
-		}
+		assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
 	}
 
 }
@@ -207,7 +202,7 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 		orgUUID     string
 		licenseType license.LicenseType
 		edition     string
-		expected    *license.LicenseAlter
+		expected    interface{}
 	}
 	licenseType := license.GetLicenseType(license.LicenseTypeProject)
 	exitLicenseEntity, _ := license.GetOrgLicenseByType(suite.sqlExecutor, suite.orgIds[0], licenseType)
@@ -220,45 +215,36 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 			suite.orgIds[0],
 			licenseType,
 			exitLicenseAlter.EditionName,
-			exitLicenseAlter,
+			[]*license.LicenseAlter{exitLicenseAlter},
 		},
-		"传入错误的组织id，查询alter记录：返回nil": {
+		"传入错误的组织id，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			"123auto",
 			licenseType,
 			exitLicenseAlter.EditionName,
-			nil,
+			[]*license.LicenseAlter{},
 		},
-		"传入错误的licenseType，查询alter记录：返回nil": {
+		"传入错误的licenseType，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
 			exitLicenseAlter.EditionName,
-			nil,
+			[]*license.LicenseAlter{},
 		},
-		"传入错误的edition，查询alter记录：返回nil": {
+		"传入错误的edition，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			licenseType,
 			"123autotest",
-			nil,
+			[]*license.LicenseAlter{},
 		},
 	}
 
 	for name, tc := range data_suite {
 		licenseAlters, _ := license.ListLicenseAltersByOrgUUIDAndTypeEdition(tc.sql, tc.orgUUID, tc.licenseType, tc.edition)
-		if strings.Contains(name, "成功") {
-			assert.Contains(suite.T(), licenseAlters, tc.expected, name)
-		} else if strings.Contains(name, "nil") {
-			assert.Nil(suite.T(), licenseAlters, name)
-		}
+		assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
 	}
 
-}
-
-func (suite *testSuite) TestN() {
-
-	fmt.Println("11")
 }
 
 // 测试套件，批量执行测试用例

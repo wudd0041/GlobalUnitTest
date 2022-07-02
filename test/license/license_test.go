@@ -92,10 +92,10 @@ func (suite *testSuite) BatchInsertLicensAndGrant() ([]string, error) {
 	orgId1 := uuid.UUID()
 	orgId2 := uuid.UUID()
 	orgIds := []string{orgId1, orgId2}
-	l1 := orgLicense{orgId1, 1, "enterprise-trail", 0, 100, -1, 1655714729}
-	l2 := orgLicense{orgId1, 2, "enterprise-trail", 0, 100, -1, 1655714729}
-	l3 := orgLicense{orgId2, 1, "enterprise-trail", 0, 100, -1, 1655714729}
-	l4 := orgLicense{orgId2, 2, "enterprise-trail", 0, 100, -1, 1655714729}
+	l1 := orgLicense{orgId1, 1, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l2 := orgLicense{orgId1, 2, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l3 := orgLicense{orgId2, 1, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l4 := orgLicense{orgId2, 2, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
 	license := []*orgLicense{&l1, &l2, &l3, &l4}
 	_, err := suite.db.NamedExec("INSERT INTO license (org_uuid,type,edition,add_type,scale,expire_time,update_time) "+
 		"VALUES (:org_uuid,:type,:edition,:add_type,:scale,:expire_time,:update_time)", license)
@@ -121,8 +121,6 @@ func (suite *testSuite) BatchInsertLicensAndGrant() ([]string, error) {
 	} else if err2 != nil {
 		fmt.Printf("BatchInsertLicense执行失败: %v", err2)
 	}
-
-	fmt.Println(orgIds)
 
 	return orgIds, err
 }
@@ -183,7 +181,7 @@ func (suite *testSuite) TestAddLicense() {
 	licenseTag := licenseEntity.LicenseTag
 
 	data_suite := map[string]test{
-		"传入完全不存在的licenseTag：添加证书成功": {suite.sqlExecutor,
+		"传入完全不存在的licenseTag: 添加证书成功": {suite.sqlExecutor,
 			license.AddTypePay,
 			&license.LicenseAdd{
 				suite.orgIds[0],
@@ -193,7 +191,7 @@ func (suite *testSuite) TestAddLicense() {
 			},
 			AddLicenseTag(license.LicenseTypeProject, suite.autoFlag),
 		},
-		"传入已经存在的licenseTag，返回报错信息": {
+		"传入已经存在的licenseTag: 返回nil": {
 			suite.sqlExecutor,
 			license.AddTypePay,
 			&license.LicenseAdd{
@@ -202,7 +200,7 @@ func (suite *testSuite) TestAddLicense() {
 				-1,
 				licenseTag,
 			},
-			"",
+			nil,
 		},
 	}
 
@@ -210,10 +208,8 @@ func (suite *testSuite) TestAddLicense() {
 		result, err := license.AddLicense(tc.sql, tc.addType, tc.addLicense)
 		if strings.Contains(name, "成功") {
 			assert.EqualValues(suite.T(), tc.expected, result.LicenseTag, name)
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
 		} else if strings.Contains(name, "nil") {
-			assert.Nil(suite.T(), result, name)
+			assert.Nil(suite.T(), err, name)
 		}
 	}
 
@@ -228,6 +224,8 @@ func (suite *testSuite) TestBatchAddLicenses() {
 		addLicense []*license.LicenseAdd
 		expected   interface{}
 	}
+
+	//nil????
 
 	// 获取已有应用的licenseTag
 	licenseEntity, _ := license.GetOrgLicenseByType(suite.sqlExecutor, suite.orgIds[0], license.GetLicenseType(license.LicenseTypeProject))
@@ -380,7 +378,6 @@ func (suite *testSuite) TestBatchUpdateOrgLicenseScale() {
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 10, -1)
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeWiki, license.EditionTeam, 10, -1)
 	exitLicenseTag01 := AddLicenseTag(license.LicenseTypeProject, license.EditionTeam)
-	exitLicenseType := license.GetLicenseType(license.LicenseTypeProject)
 	exitLicenseTag02 := AddLicenseTag(license.LicenseTypeWiki, license.EditionTeam)
 	exitLicenseTags := []*license.LicenseTag{&exitLicenseTag01, &exitLicenseTag02}
 	notExitLicenseTag := AddLicenseTag(license.LicenseTypeProject, suite.autoFlag+"1")
@@ -391,12 +388,9 @@ func (suite *testSuite) TestBatchUpdateOrgLicenseScale() {
 			orgUUID,
 			exitLicenseTags,
 			20,
-			[]*license.LicenseAlter{
-				{New: &license.LicenseAlterInfo{Scale: 20}},
-				{New: &license.LicenseAlterInfo{Scale: 20}},
-			},
+			20,
 		},
-		"对1个不存在的licenseTag和1个存在的licenseTag修改scale为30：返回报错信息": {
+		"对1个不存在的licenseTag和1个存在的licenseTag修改scale为30：返回nil": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			[]*license.LicenseTag{
@@ -404,31 +398,23 @@ func (suite *testSuite) TestBatchUpdateOrgLicenseScale() {
 				&notExitLicenseTag,
 			},
 			30,
-			"",
+			nil,
 		},
-		"对1个不存在的orgUUID修改scale为30：返回报错信息": {
+		"对1个不存在的orgUUID修改scale为30：返回nil": {
 			suite.sqlExecutor,
 			"1234org",
 			exitLicenseTags,
 			40,
-			"",
+			nil,
 		},
 	}
 
 	for name, tc := range data_suite {
-		licenseScales := []*license.LicenseAlter{}
-		licenseAlters, err := license.BatchUpdateOrgLicenseScale(tc.sql, tc.orgUUID, tc.tag, tc.newScale)
+		licenseAlters, _ := license.BatchUpdateOrgLicenseScale(tc.sql, tc.orgUUID, tc.tag, tc.newScale)
 		if strings.Contains(name, "成功") {
 			for _, v := range licenseAlters {
-				licenseScales = append(licenseScales, &license.LicenseAlter{New: v.New})
+				assert.EqualValues(suite.T(), tc.expected, v.New.Scale, name)
 			}
-			assert.EqualValues(suite.T(), tc.expected, licenseScales, name)
-
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
-			licenseEntity, _ := license.GetOrgLicenseByType(tc.sql, tc.orgUUID, exitLicenseType)
-			assert.NotEqualValues(suite.T(), 30, licenseEntity.Scale, name)
-
 		} else if strings.Contains(name, "nil") {
 			assert.Nil(suite.T(), licenseAlters, name)
 		}
@@ -593,11 +579,11 @@ func (suite *testSuite) TestAddOrUpdateOrgDefaultGrant() {
 			&defaultGrant,
 			license.DefaultGrantTrue,
 		},
-		"新增不存在的组织1个license默认授权配置：返回报错信息": {
+		"新增不存在的组织1个license默认授权配置：返回nil": {
 			suite.sqlExecutor,
 			"123",
 			&defaultGrant,
-			"",
+			nil,
 		},
 	}
 
@@ -610,8 +596,8 @@ func (suite *testSuite) TestAddOrUpdateOrgDefaultGrant() {
 					assert.True(suite.T(), v.DefaultGrant, name)
 				}
 			}
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
+		} else if strings.Contains(name, "nil") {
+			assert.Nil(suite.T(), err, name)
 		}
 
 	}
@@ -645,11 +631,11 @@ func (suite *testSuite) TestBatchAddOrUpdateOrgDefaultGrants() {
 			defaultGrants,
 			license.DefaultGrantTrue,
 		},
-		"新增不存在组织的1个license默认授权配置:返回报错信息": {
+		"新增不存在组织的1个license默认授权配置:返回nil信息": {
 			suite.sqlExecutor,
 			"123auto",
 			defaultGrants,
-			"",
+			nil,
 		},
 	}
 
@@ -662,8 +648,8 @@ func (suite *testSuite) TestBatchAddOrUpdateOrgDefaultGrants() {
 					assert.EqualValues(suite.T(), tc.expected, v.DefaultGrant, name)
 				}
 			}
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
+		} else if strings.Contains(name, "nil") {
+			assert.Nil(suite.T(), err, name)
 		}
 
 	}
@@ -686,22 +672,20 @@ func (suite *testSuite) TestGetOrgDefaultGrantLicenses() {
 			suite.orgIds[0],
 			suite.GetLicenseDefaultGrant(suite.orgIds[0]),
 		},
-		"查询不存在组织的默认授权配置：返回报错信息": {
+		"查询不存在组织的默认授权配置：返回空对象": {
 			suite.sqlExecutor,
-			suite.orgIds[0],
-			"",
+			"123",
+			[]*license.LicenseDefaultGrant{},
 		},
 	}
 
 	for name, tc := range data_suite {
-		licenseDefaultGrants, err := license.GetOrgDefaultGrantLicenses(tc.sql, tc.orgUUID)
+		licenseDefaultGrants, _ := license.GetOrgDefaultGrantLicenses(tc.sql, tc.orgUUID)
 
 		if strings.Contains(name, "成功") {
 			assert.EqualValues(suite.T(), tc.expected, licenseDefaultGrants, name)
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
-		} else {
-			assert.Nil(suite.T(), licenseDefaultGrants, name)
+		} else if strings.Contains(name, "空对象") {
+			assert.EqualValues(suite.T(), tc.expected, licenseDefaultGrants, name)
 		}
 
 	}
@@ -737,19 +721,19 @@ func (suite *testSuite) TestGetOrgLicenseByTypeAndTimestamp() {
 			"123auto",
 			license.GetLicenseType(license.LicenseTypeProject),
 			timeStamp,
-			"",
+			nil,
 		},
 		"传入不存在的licenseType：返回nil": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
 			timeStamp,
-			"",
+			nil,
 		},
 	}
 
 	for name, tc := range data_suite {
-		actualLicenseEntity, _ := license.GetOrgLicenseByTypeAndTimestamp(tc.sql, suite.orgIds[0], tc.licenseType, tc.sec)
+		actualLicenseEntity, _ := license.GetOrgLicenseByTypeAndTimestamp(tc.sql, tc.orgUUID, tc.licenseType, tc.sec)
 		if strings.Contains(name, "成功") {
 			assert.EqualValues(suite.T(), tc.expected, actualLicenseEntity, name)
 
@@ -766,11 +750,12 @@ func (suite *testSuite) TestListExpireInTimeStampRange() {
 		sql        gorp.SqlExecutor
 		startStamp int64
 		endStamp   int64
-		expected   *license.LicenseEntity
+		expected   []*license.LicenseEntity
 	}
 
 	startStamp := time.Now().Unix() - 600
 	endStamp := startStamp + 600
+	greaterStartStamp := endStamp + 600
 
 	// 获取licenseTag
 	orgUUID := uuid.UUID()
@@ -783,24 +768,19 @@ func (suite *testSuite) TestListExpireInTimeStampRange() {
 			suite.sqlExecutor,
 			startStamp,
 			endStamp,
-			exitLicenseEntity,
+			[]*license.LicenseEntity{exitLicenseEntity},
 		},
-		"传入起始小于终止时间：返回nil": {
+		"传入起始大于于终止时间：返回nil": {
 			suite.sqlExecutor,
-			startStamp,
+			greaterStartStamp,
 			endStamp,
-			nil,
+			[]*license.LicenseEntity{},
 		},
 	}
 
 	for name, tc := range data_suite {
 		licenseEntities, _ := license.ListExpireInTimeStampRange(tc.sql, tc.startStamp, tc.endStamp)
-		if strings.Contains(name, "成功") {
-			assert.Subset(suite.T(), licenseEntities, exitLicenseEntity, name)
-		} else if strings.Contains(name, "nil") {
-			assert.Nil(suite.T(), licenseEntities, name)
-		}
-
+		assert.EqualValues(suite.T(), licenseEntities, tc.expected, name)
 	}
 }
 
@@ -826,21 +806,16 @@ func (suite *testSuite) TestGetOrgLicenses() {
 			suite.orgIds[0],
 			orgLicenses,
 		},
-		"传入错误组织UUID：返回nil": {
+		"传入错误组织UUID：返回空对象": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
-			nil,
+			[]*license.LicenseEntity{},
 		},
 	}
 
 	for name, tc := range data_suite {
 		licenseEntities, _ := license.GetOrgLicenses(tc.sql, tc.orgUUID)
-		if strings.Contains(name, "成功") {
-			assert.EqualValues(suite.T(), tc.expected, licenseEntities, name)
-		} else {
-			assert.Nil(suite.T(), licenseEntities, name)
-		}
-
+		assert.EqualValues(suite.T(), tc.expected, licenseEntities, name)
 	}
 }
 
@@ -869,18 +844,13 @@ func (suite *testSuite) TestGetOrgLicensesMap() {
 		"传入错误组织UUID：返回nil": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
-			"",
+			map[int]*license.LicenseEntity{},
 		},
 	}
 
 	for name, tc := range data_suite {
 		licenseEntitiesMap, _ := license.GetOrgLicensesMap(tc.sql, tc.orgUUID)
-		if strings.Contains(name, "成功") {
-			assert.EqualValues(suite.T(), tc.expected, licenseEntitiesMap, name)
-		} else {
-			assert.Nil(suite.T(), licenseEntitiesMap, name)
-		}
-
+		assert.EqualValues(suite.T(), tc.expected, licenseEntitiesMap, name)
 	}
 }
 
@@ -938,15 +908,11 @@ func (suite *testSuite) TestGetOrgAllLicensesMap() {
 	type test struct {
 		sql      gorp.SqlExecutor
 		orgUUID  string
-		expected string
+		expected interface{}
 	}
 
 	orgUUID := uuid.UUID()
-	licenseTag := AddLicenseTag(license.LicenseTypeProject, suite.autoFlag)
-	license.AddLicense(
-		suite.sqlExecutor,
-		license.AddTypePay,
-		&license.LicenseAdd{orgUUID, 100, -1, licenseTag})
+	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, suite.autoFlag, 100, -1)
 
 	// 测试数据
 	data_suite := map[string]test{
@@ -955,23 +921,20 @@ func (suite *testSuite) TestGetOrgAllLicensesMap() {
 			orgUUID,
 			suite.autoFlag,
 		},
-		"传入错误的组织UUID：返回nil": {
+		"传入错误的组织UUID：返回空对象": {
 			suite.sqlExecutor,
 			orgUUID,
-			suite.autoFlag,
+			map[int][]*license.LicenseEntity{},
 		},
 	}
 
 	for name, tc := range data_suite {
 		orgAllLicensesMap, _ := license.GetOrgAllLicensesMap(tc.sql, tc.orgUUID)
-		licenseEdition := []string{}
 		if strings.Contains(name, "成功") {
-			for _, LicenseEntity := range orgAllLicensesMap[license.LicenseTypeProject] {
-				licenseEdition = append(licenseEdition, LicenseEntity.EditionName)
-			}
-			assert.Contains(suite.T(), licenseEdition, tc.expected, name)
+			licenseEdition := orgAllLicensesMap[license.LicenseTypeProject][0].EditionName
+			assert.EqualValues(suite.T(), tc.expected, licenseEdition, name)
 		} else {
-			assert.Nil(suite.T(), orgAllLicensesMap, name)
+			assert.EqualValues(suite.T(), tc.expected, orgAllLicensesMap, name)
 		}
 
 	}
@@ -1001,13 +964,13 @@ func (suite *testSuite) TestGetOrgAllLicensesByType() {
 			suite.sqlExecutor,
 			"123",
 			license.GetLicenseType(license.LicenseTypeProject),
-			orgAllLicensesMap[license.LicenseTypeProject],
+			[]*license.LicenseEntity{},
 		},
 		"传入错误的应用类型LicenseType：返回nil": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
-			orgAllLicensesMap[license.LicenseTypeProject],
+			[]*license.LicenseEntity{},
 		},
 	}
 
@@ -1015,10 +978,7 @@ func (suite *testSuite) TestGetOrgAllLicensesByType() {
 		orgAllLicenses, _ := license.GetOrgAllLicensesByType(tc.sql, tc.orgUUID, tc.licenseType)
 		if strings.Contains(name, "成功") {
 			assert.EqualValues(suite.T(), tc.expected, orgAllLicenses, name)
-		} else {
-			assert.Nil(suite.T(), orgAllLicenses, name)
 		}
-
 	}
 
 }
@@ -1026,7 +986,6 @@ func (suite *testSuite) TestGetOrgAllLicensesByType() {
 // 获取组织下当前装配的LicenseType实体信息, 无授权则返回nil
 func (suite *testSuite) TestGetOrgLicenseByType() {
 
-	// 正向出参,project 试用版
 	type test struct {
 		sql         gorp.SqlExecutor
 		orgUUID     string

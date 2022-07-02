@@ -63,7 +63,7 @@ const (
 const (
 	EditionTeam            = "team"
 	EditionEnterprise      = "enterprise"
-	EditionEnterpriseTrail = "enterprise-trail"
+	EditionEnterpriseTrial = "enterprise-trial"
 )
 
 type LicenseType interface {
