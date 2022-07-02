@@ -36,7 +36,7 @@ type orgLicense struct {
 
 // setup 初始化数据库(帐号需要修改)
 func (suite *testSuite) SetupSuite() {
-	database, err := sqlx.Open("mysql", "root:admin123456@tcp(127.0.0.1:3306)/test")
+	database, err := sqlx.Open("mysql", "bang:bang@tcp(127.0.0.1:3306)/U0015_LOCAL")
 	if err != nil {
 		panic(err)
 	}
@@ -244,7 +244,7 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 	for name, tc := range data_suite {
 		licenseAlters, _ := license.ListLicenseAltersByOrgUUIDAndTypeEdition(tc.sql, tc.orgUUID, tc.licenseType, tc.edition)
 		if strings.Contains(name, "成功") {
-			assert.Contains(suite.T(), licenseAlters, exitLicenseAlter, name)
+			assert.Contains(suite.T(), licenseAlters, tc.expected, name)
 		} else {
 			assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
 		}

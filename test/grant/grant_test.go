@@ -49,7 +49,7 @@ type licenseGrant struct {
 // setup 初始化数据库(帐号需要修改)
 func (suite *testSuite) SetupSuite() {
 
-	database, err := sqlx.Open("mysql", "root:admin123456@tcp(127.0.0.1:3306)/test")
+	database, err := sqlx.Open("mysql", "bang:bang@tcp(127.0.0.1:3306)/U0015_LOCAL")
 	if err != nil {
 		panic(err)
 	}
