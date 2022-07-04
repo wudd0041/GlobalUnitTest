@@ -84,26 +84,26 @@ func (suite *testSuite) BatchInsertLicensAndGrant() ([]string, map[string][]stri
 	orgId1 := uuid.UUID()
 	orgId2 := uuid.UUID()
 	orgIds := []string{orgId1, orgId2}
-	l1 := orgLicense{orgId1, 1, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
-	l2 := orgLicense{orgId1, 2, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
-	l3 := orgLicense{orgId2, 1, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
-	l4 := orgLicense{orgId2, 2, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
-	license := []*orgLicense{&l1, &l2, &l3, &l4}
+	l1 := orgLicense{orgId1, license.LicenseTypeProject, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l2 := orgLicense{orgId1, license.LicenseTypeWiki, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l3 := orgLicense{orgId2, license.LicenseTypeProject, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	l4 := orgLicense{orgId2, license.LicenseTypeWiki, license.EditionEnterpriseTrial, 0, 100, -1, 1655714729}
+	myOrgLicense := []*orgLicense{&l1, &l2, &l3, &l4}
 	_, err := suite.db.NamedExec("INSERT INTO license (org_uuid,type,edition,add_type,scale,expire_time,update_time) "+
-		"VALUES (:org_uuid,:type,:edition,:add_type,:scale,:expire_time,:update_time)", license)
+		"VALUES (:org_uuid,:type,:edition,:add_type,:scale,:expire_time,:update_time)", myOrgLicense)
 
 	userId1 := uuid.UUID()
 	userId2 := uuid.UUID()
 	userId3 := uuid.UUID()
 	userId4 := uuid.UUID()
-	ug1 := licenseGrant{orgId1, 1, userId1, 1}
-	ug2 := licenseGrant{orgId1, 1, userId2, 1}
-	ug3 := licenseGrant{orgId1, 2, userId1, 1}
-	ug4 := licenseGrant{orgId1, 2, userId2, 1}
-	ug5 := licenseGrant{orgId2, 1, userId3, 1}
-	ug6 := licenseGrant{orgId2, 1, userId4, 1}
-	ug7 := licenseGrant{orgId2, 2, userId3, 1}
-	ug8 := licenseGrant{orgId2, 2, userId4, 1}
+	ug1 := licenseGrant{orgId1, license.LicenseTypeProject, userId1, 1}
+	ug2 := licenseGrant{orgId1, license.LicenseTypeProject, userId2, 1}
+	ug3 := licenseGrant{orgId1, license.LicenseTypeWiki, userId1, 1}
+	ug4 := licenseGrant{orgId1, license.LicenseTypeWiki, userId2, 1}
+	ug5 := licenseGrant{orgId2, license.LicenseTypeProject, userId3, 1}
+	ug6 := licenseGrant{orgId2, license.LicenseTypeProject, userId4, 1}
+	ug7 := licenseGrant{orgId2, license.LicenseTypeWiki, userId3, 1}
+	ug8 := licenseGrant{orgId2, license.LicenseTypeWiki, userId4, 1}
 	licenseGrant := []*licenseGrant{&ug1, &ug2, &ug3, &ug4, &ug5, &ug6, &ug7, &ug8}
 	_, err2 := suite.db.NamedExec("INSERT INTO license_grant (org_uuid, type, user_uuid, status) "+
 		"VALUES (:org_uuid, :type, :user_uuid, :status)", licenseGrant)
@@ -117,8 +117,6 @@ func (suite *testSuite) BatchInsertLicensAndGrant() ([]string, map[string][]stri
 	var orgUserMap = make(map[string][]string)
 	orgUserMap[orgId1] = []string{userId1, userId2}
 	orgUserMap[orgId2] = []string{userId3, userId4}
-	fmt.Println(orgIds)
-	fmt.Println(orgUserMap)
 	return orgIds, orgUserMap, err
 }
 
@@ -130,7 +128,7 @@ func AddLicenseTag(typeInt int, editionName string) license.LicenseTag {
 }
 
 func (suite *testSuite) ManulAddLicense(orgUUID string, typeInt int, edition string, scale int, expire_time int64) {
-	_, err := license.AddLicense(suite.sqlExecutor, license.AddTypeFree, &license.LicenseAdd{orgUUID, scale, expire_time, AddLicenseTag(typeInt, edition)})
+	_, err := license.AddLicense(suite.sqlExecutor, license.AddTypePay, &license.LicenseAdd{orgUUID, scale, expire_time, AddLicenseTag(typeInt, edition)})
 	if err != nil {
 		fmt.Println("构造license发生错误：", err)
 		panic(err)
@@ -250,12 +248,12 @@ func (suite *testSuite) TestListUserGrants() {
 	// 遍历type,调用GetUserGrantByType，获取集合
 	orgUUID := suite.orgIds[0]
 	userUUID := suite.orgUserMap[orgUUID][0]
-	var licenseUserGrants []*license.LicenseUserGrant
+	var myLicenseUserGrants []*license.LicenseUserGrant
 	for _, typeInt := range []int{1, 2, 3, 4, 5, 6, 7, 8} {
 		licenseType := license.GetLicenseType(typeInt)
 		licenseUserGrant, _ := license.GetUserGrantByType(suite.sqlExecutor, orgUUID, userUUID, licenseType)
 		if licenseUserGrant != nil {
-			licenseUserGrants = append(licenseUserGrants, licenseUserGrant)
+			myLicenseUserGrants = append(myLicenseUserGrants, licenseUserGrant)
 		}
 	}
 
@@ -264,7 +262,7 @@ func (suite *testSuite) TestListUserGrants() {
 			suite.sqlExecutor,
 			orgUUID,
 			userUUID,
-			licenseUserGrants,
+			myLicenseUserGrants,
 		}, "传入错误的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
 			suite.sqlExecutor,
 			"123auto",
@@ -315,13 +313,13 @@ func (suite *testSuite) TestListUserGrantTypeInts() {
 			orgUUID,
 			userUUID,
 			userGrantTypeInts,
-		}, "传入错误的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回空对象": {
+		}, "传入错误的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
 			suite.sqlExecutor,
 			"123",
 			userUUID,
 			[]int{},
 		},
-		"传入正确的组织id和错误的用户id，查询用户所有LicenseType授权列表：返回空对象": {
+		"传入正确的组织id和错误的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
 			suite.sqlExecutor,
 			orgUUID,
 			"555",
@@ -347,14 +345,12 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 	}
 
 	orgUUID := suite.orgIds[0]
-	userUUIDs := suite.orgUserMap[orgUUID][:2]
+	userUUIDs := suite.orgUserMap[orgUUID]
 
 	// 调用ListUserGrantTypeInts，获取user下的ints
 	// 根据int，调用GetUserGrantByType，获取int-status的关系
 	UserGrantTypeIntMap := make(map[string]map[int]int, 0) // 多用户
-
 	for _, userUUID := range userUUIDs {
-
 		GrantTypeIntMap := make(map[int]int, 0)
 		typeInts, _ := license.ListUserGrantTypeInts(suite.sqlExecutor, orgUUID, userUUID)
 		for _, typeInt := range typeInts {
@@ -367,8 +363,8 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 		UserGrantTypeIntMap[userUUID] = GrantTypeIntMap
 	}
 
-	onlyUserGrantTypeIntMap := UserGrantTypeIntMap // 单用户
-	delete(onlyUserGrantTypeIntMap, userUUIDs[1])
+	projectStatusMap := map[int]int{license.LicenseTypeProject: 1}
+	onlyUserGrantTypeIntMap := map[string]map[int]int{userUUIDs[0]: projectStatusMap} // 单用户
 
 	data_suite := map[string]test{
 		"传入正确组织id和用户id：成功，返回用户下各个licenseType的状态。": {
@@ -384,27 +380,24 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 			onlyUserGrantTypeIntMap,
 		},
 
-		"传入错误的组织id：返回nil": {
+		"传入错误的组织id：返回内容为空": {
 			suite.sqlExecutor,
 			"123auto",
 			userUUIDs,
-			nil,
+			map[string]map[int]int{},
 		},
-		"传入错误的用户id：返回nil": {
+		"传入错误的用户id：返回内容为空": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]string{"123", "456"},
-			nil,
+			map[string]map[int]int{},
 		},
 	}
 
 	for name, tc := range data_suite {
 		mapUserGrantTypeInts, _ := license.MapUserGrantTypeIntsByUserUUIDs(tc.sql, tc.orgUUID, tc.userUUIDs)
-		if strings.Contains(name, "成功") {
-			assert.EqualValues(suite.T(), tc.expected, mapUserGrantTypeInts, name)
-		} else if strings.Contains(name, "nil") {
-			assert.Nil(suite.T(), mapUserGrantTypeInts, name)
-		}
+		assert.EqualValues(suite.T(), tc.expected, mapUserGrantTypeInts, name)
+
 	}
 
 }
@@ -430,19 +423,19 @@ func (suite *testSuite) TestListOrgUserGrantsByType() {
 	}
 
 	data_suite := map[string]test{
-		"传入正确组织id和用户id：成功，返回用户下各个licenseType的状态。": {
+		"传入正确组织id：成功，返回用户下各个licenseType的状态。": {
 			suite.sqlExecutor,
 			orgUUID,
 			licenseType,
 			orgUserGrants,
 		},
-		"传入错误的组织id：返回nil": {
+		"传入错误的组织id：返回内容为空": {
 			suite.sqlExecutor,
 			"123",
 			licenseType,
 			[]*license.LicenseUserGrant{},
 		},
-		"传入错误的license：返回nil": {
+		"传入错误的license：返回内容为空": {
 			suite.sqlExecutor,
 			orgUUID,
 			license.GetLicenseType(100),
@@ -452,11 +445,7 @@ func (suite *testSuite) TestListOrgUserGrantsByType() {
 
 	for name, tc := range data_suite {
 		userGrants, _ := license.ListOrgUserGrantsByType(tc.sql, tc.orgUUID, tc.licenseType)
-		if strings.Contains(name, "成功") {
-			assert.EqualValues(suite.T(), tc.expected, userGrants, name)
-		} else if strings.Contains(name, "nil") {
-			assert.Nil(suite.T(), userGrants, name)
-		}
+		assert.EqualValues(suite.T(), tc.expected, userGrants, name)
 	}
 
 }
@@ -492,6 +481,7 @@ func (suite *testSuite) TestMapOrgLicenseGrantCount() {
 
 }
 
+// todo
 // 授予组织下某个用户对应LicenseType
 func (suite *testSuite) TestGrantLicenseToUser() {
 
@@ -593,10 +583,10 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 			[]string{userUUID01, userUUID02},
 			licenseType,
 		},
-		"传入错误的userUUID：返回报错信息": { //??
+		"传入错误的userUUID：返回报错信息": {
 			suite.sqlExecutor,
 			orgUUID,
-			[]string{"123autouser"},
+			[]string{""},
 			licenseType,
 		},
 		"传入错误的licenseType：返回报错信息": {
@@ -739,9 +729,8 @@ func (suite *testSuite) TestReclaimUserGrant() {
 	licenseType := license.GetLicenseType(license.LicenseTypeProject)
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 10, -1)
 
-	// 查询是否存在授权--不存在则授予，然后回收--存在则直接回收--查询是否存在授权
-	licenseUserGrant, _ := license.GetUserGrantByType(suite.sqlExecutor, orgUUID, userUUID, licenseType)
-	if licenseUserGrant == nil {
+	myLicenseUserGrant, _ := license.GetUserGrantByType(suite.sqlExecutor, orgUUID, userUUID, licenseType)
+	if myLicenseUserGrant == nil {
 		license.GrantLicenseToUser(suite.sqlExecutor, orgUUID, userUUID, licenseType)
 	}
 
@@ -752,35 +741,34 @@ func (suite *testSuite) TestReclaimUserGrant() {
 			userUUID,
 			licenseType,
 			nil,
-		}, "传入错误的组织id回收授权：返回报错信息": {
+		}, "传入错误的组织id回收授权：返回nil": {
 			suite.sqlExecutor,
 			"123",
 			userUUID,
 			licenseType,
-			"",
+			nil,
 		},
-		"传入错误的用户id回收授权：返回报错信息": {
+		"传入错误的用户id回收授权：返回nil": {
 			suite.sqlExecutor,
 			orgUUID,
 			"555",
 			licenseType,
-			"",
-		}, "传入错误的licenseType回收授权：返回报错信息": {
+			nil,
+		}, "传入错误的licenseType回收授权：返回nil": {
 			suite.sqlExecutor,
 			orgUUID,
 			userUUID,
 			license.GetLicenseType(100),
-			"",
+			nil,
 		},
 	}
 
 	for name, tc := range data_suite {
 		err := license.ReclaimUserGrant(tc.sql, tc.orgUUID, tc.userUUID, tc.tpe)
+		assert.Nil(suite.T(), err, name)
 		if strings.Contains(name, "成功") {
 			licenseUserGrant, _ := license.GetUserGrantByType(suite.sqlExecutor, tc.orgUUID, tc.userUUID, tc.tpe)
 			assert.Nil(suite.T(), licenseUserGrant, name)
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
 		}
 	}
 
@@ -813,36 +801,35 @@ func (suite *testSuite) TestReclaimUserGrants() {
 			orgUUID,
 			userUUID,
 			licenseTypes,
-			nil,
-		}, "传入错误的组织id回收授权：返回报错信息": {
+			[]*license.LicenseUserGrant{},
+		}, "传入错误的组织id回收授权：返回nil": {
 			suite.sqlExecutor,
 			"123",
 			userUUID,
 			licenseTypes,
-			"",
+			nil,
 		},
-		"传入错误的用户id回收授权：返回报错信息": {
+		"传入错误的用户id回收授权：返回nil": {
 			suite.sqlExecutor,
 			orgUUID,
 			"555",
 			licenseTypes,
-			"",
-		}, "传入错误的licenseType回收授权：返回报错信息": {
+			nil,
+		}, "传入错误的licenseType回收授权：返回nil": {
 			suite.sqlExecutor,
 			orgUUID,
 			userUUID,
 			[]license.LicenseType{license.GetLicenseType(100)},
-			"",
+			nil,
 		},
 	}
 
 	for name, tc := range data_suite {
 		err := license.ReclaimUserGrants(tc.sql, tc.orgUUID, tc.userUUID, tc.types)
+		assert.Nil(suite.T(), err, name)
 		if strings.Contains(name, "成功") {
 			licenseUserGrants, _ := license.ListUserGrants(suite.sqlExecutor, tc.orgUUID, tc.userUUID)
-			assert.Nil(suite.T(), licenseUserGrants, name)
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
+			assert.EqualValues(suite.T(), tc.expected, licenseUserGrants, name)
 		}
 	}
 
@@ -878,24 +865,22 @@ func (suite *testSuite) TestReclaimUserAllGrant() {
 			suite.sqlExecutor,
 			"123",
 			userUUID,
-			"",
+			nil,
 		},
 		"传入错误的用户id回收授权：返回nil": {
 			suite.sqlExecutor,
 			orgUUID,
 			"555",
-			"",
+			nil,
 		},
 	}
 
 	for name, tc := range data_suite {
 		err := license.ReclaimUserAllGrant(tc.sql, tc.orgUUID, tc.userUUIDs)
+		assert.Nil(suite.T(), err, name)
 		if strings.Contains(name, "成功") {
-			assert.Nil(suite.T(), err, name)
 			licenseUserGrants, _ := license.ListUserGrants(suite.sqlExecutor, orgUUID, userUUID)
 			assert.EqualValues(suite.T(), tc.expected, licenseUserGrants, name)
-		} else if strings.Contains(name, "错误") {
-			assert.Error(suite.T(), err, name)
 		}
 	}
 }
@@ -926,20 +911,20 @@ func (suite *testSuite) TestBatchReclaimUsersGrant() {
 			hasGrantUsers,
 			licenseType,
 			nil,
-		}, "传入错误的组织id回收授权：返回报错信息": {
+		}, "传入错误的组织id回收授权：返回nil": {
 			suite.sqlExecutor,
 			"123",
 			hasGrantUsers,
 			licenseType,
 			"",
 		},
-		"传入错误的用户id回收授权：返回报错信息": {
+		"传入错误的用户id回收授权：返回nil": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]string{"123", "456"},
 			licenseType,
 			"",
-		}, "传入错误的licenseType回收授权：返回报错信息": {
+		}, "传入错误的licenseType回收授权：返回nil": {
 			suite.sqlExecutor,
 			orgUUID,
 			hasGrantUsers,
@@ -955,10 +940,10 @@ func (suite *testSuite) TestBatchReclaimUsersGrant() {
 			licenseUserGrant := &license.LicenseUserGrant{}
 			for _, userUUID := range tc.userUUIDs {
 				licenseUserGrant, _ = license.GetUserGrantByType(suite.sqlExecutor, orgUUID, userUUID, licenseType)
-				assert.Len(suite.T(), licenseUserGrant, 0, name)
+				assert.Nil(suite.T(), licenseUserGrant, name)
 			}
-		} else if strings.Contains(name, "报错") {
-			assert.Error(suite.T(), err, name)
+		} else if strings.Contains(name, "nil") {
+			assert.Nil(suite.T(), err, name)
 		}
 	}
 
