@@ -805,6 +805,9 @@ func (suite *testSuite) TestGetOrgLicenses() {
 		orgUUID  string
 		expected interface{}
 	}
+
+	// todo 手工创建add
+
 	orgLicenses := []*license.LicenseEntity{}
 	for _, v := range []int{1, 2, 3, 4, 5, 6, 7, 8} {
 		licenseEntity, _ := license.GetOrgLicenseByType(suite.sqlExecutor, suite.orgIds[0], license.GetLicenseType(v))
@@ -962,7 +965,7 @@ func (suite *testSuite) TestGetOrgAllLicensesByType() {
 		sql         gorp.SqlExecutor
 		orgUUID     string
 		licenseType license.LicenseType
-		expected    []*license.LicenseEntity
+		expected    interface{}
 	}
 
 	orgAllLicensesMap, _ := license.GetOrgAllLicensesMap(suite.sqlExecutor, suite.orgIds[0])
@@ -981,17 +984,22 @@ func (suite *testSuite) TestGetOrgAllLicensesByType() {
 			license.GetLicenseType(license.LicenseTypeProject),
 			[]*license.LicenseEntity{},
 		},
-		"传入错误的应用类型LicenseType：返回内容为空": {
+		"传入错误的应用类型LicenseType：返回报错": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
-			[]*license.LicenseEntity{},
+			"",
 		},
 	}
 
 	for name, tc := range data_suite {
-		orgAllLicenses, _ := license.GetOrgAllLicensesByType(tc.sql, tc.orgUUID, tc.licenseType)
-		assert.EqualValues(suite.T(), tc.expected, orgAllLicenses, name)
+		orgAllLicenses, err := license.GetOrgAllLicensesByType(tc.sql, tc.orgUUID, tc.licenseType)
+		if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
+		} else {
+
+			assert.EqualValues(suite.T(), tc.expected, orgAllLicenses, name)
+		}
 	}
 
 }
