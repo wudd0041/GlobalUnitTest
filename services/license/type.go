@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	LicenseTypeInvalid     = 0
 	LicenseTypeProject     = 1
 	LicenseTypeWiki        = 2
 	LicenseTypeTestCase    = 3
@@ -14,6 +15,7 @@ const (
 	LicenseTypeDesk        = 7
 	LicenseTypePerformance = 8
 
+	LicenseNameInvalid     = ""
 	LicenseNameProject     = "project"
 	LicenseNameWiki        = "wiki"
 	LicenseNameTestcase    = "testcase"

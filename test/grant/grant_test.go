@@ -266,7 +266,8 @@ func (suite *testSuite) TestListUserGrants() {
 			orgUUID,
 			userUUID,
 			myLicenseUserGrants,
-		}, "传入错误的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
+		},
+		"传入错误的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
 			suite.sqlExecutor,
 			"123auto",
 			userUUID,
@@ -315,7 +316,8 @@ func (suite *testSuite) TestListUserGrantTypeInts() {
 			orgUUID,
 			userUUID,
 			userGrantTypeInts,
-		}, "传入错误的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
+		},
+		"传入错误的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
 			suite.sqlExecutor,
 			"123",
 			userUUID,
@@ -577,19 +579,19 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 			licenseType,
 			[]string{userUUID02},
 		},
-		"传入错误的orgUUID：授权失败": {
+		"传入错误的orgUUID：返回报错信息": {
 			suite.sqlExecutor,
 			"123org",
 			[]string{userUUID01, userUUID02},
 			licenseType,
-			[]string{userUUID01, userUUID02},
+			"",
 		},
-		"传入错误的userUUID：授权失败": {
+		"传入错误的userUUID：返回报错信息": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]string{""},
 			licenseType,
-			[]string{""},
+			"",
 		},
 		"传入错误的licenseType：返回报错信息": {
 			suite.sqlExecutor,
@@ -685,19 +687,19 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 			licenseTypes,
 			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
 		},
-		"传入2个licenseType，1个正确和1个错误的license应用授权失败": {
+		"传入2个licenseType，1个已授权和1个错误的license应用授权失败": {
 			tx,
 			orgUUID01,
 			userUUID01,
 			[]license.LicenseType{licenseTypes[0], license.GetLicenseType(100)},
-			[]int{license.LicenseTypeProject, 100},
+			[]int{license.LicenseTypeProject, license.LicenseTypeInvalid},
 		},
-		"传入错误的userUUID：应用授权失败": {
+		"传入错误的userUUID：应用授权成功": {
 			tx,
 			orgUUID01,
 			"123user",
 			licenseTypes,
-			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+			[]int{license.LicenseTypeProject},
 		},
 	}
 	for name, tc := range data_suite {
