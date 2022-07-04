@@ -807,7 +807,6 @@ func (suite *testSuite) TestGetOrgLicenses() {
 	}
 
 	// todo 手工创建
-
 	orgLicenses := []*license.LicenseEntity{}
 	for _, v := range []int{1, 2, 3, 4, 5, 6, 7, 8} {
 		licenseEntity, _ := license.GetOrgLicenseByType(suite.sqlExecutor, suite.orgIds[0], license.GetLicenseType(v))
