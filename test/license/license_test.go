@@ -806,7 +806,7 @@ func (suite *testSuite) TestGetOrgLicenses() {
 		expected interface{}
 	}
 
-	// todo 手工创建add
+	// todo 手工创建
 
 	orgLicenses := []*license.LicenseEntity{}
 	for _, v := range []int{1, 2, 3, 4, 5, 6, 7, 8} {
@@ -832,7 +832,7 @@ func (suite *testSuite) TestGetOrgLicenses() {
 
 	for name, tc := range data_suite {
 		licenseEntities, _ := license.GetOrgLicenses(tc.sql, tc.orgUUID)
-		assert.EqualValues(suite.T(), tc.expected, licenseEntities, name)
+		assert.ElementsMatch(suite.T(), tc.expected, licenseEntities, name)
 	}
 }
 

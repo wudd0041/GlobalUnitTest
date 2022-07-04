@@ -60,7 +60,7 @@ func (suite *testSuite) SetupSuite() {
 	suite.db = database
 	fmt.Println("数据库连接成功！")
 
-	dbm := &gorp.DbMap{
+	dbm = &gorp.DbMap{
 		Db: database.DB,
 		Dialect: gorp.MySQLDialect{
 			Engine:   "InnoDB",
@@ -216,12 +216,12 @@ func (suite *testSuite) TestGetUserGrantByType() {
 			license.GetLicenseType(100),
 			nil,
 		},
-		"传入错误的userUUID：返回nil": {
+		"传入错误的userUUID：返回报错": {
 			suite.sqlExecutor,
 			newOrgUUID01,
 			"123user",
 			licenseTypeProject,
-			nil,
+			"",
 		},
 	}
 	for name, tc := range data_suite {
@@ -230,6 +230,8 @@ func (suite *testSuite) TestGetUserGrantByType() {
 			assert.EqualValues(suite.T(), tc.expected, userGrant, name)
 		} else if strings.Contains(name, "nil") {
 			assert.Nil(suite.T(), err, name)
+		} else if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
 		}
 	}
 
@@ -347,8 +349,6 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 	orgUUID := suite.orgIds[0]
 	userUUIDs := suite.orgUserMap[orgUUID]
 
-	// 调用ListUserGrantTypeInts，获取user下的ints
-	// 根据int，调用GetUserGrantByType，获取int-status的关系
 	UserGrantTypeIntMap := make(map[string]map[int]int, 0) // 多用户
 	for _, userUUID := range userUUIDs {
 		GrantTypeIntMap := make(map[int]int, 0)
@@ -397,7 +397,6 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 	for name, tc := range data_suite {
 		mapUserGrantTypeInts, _ := license.MapUserGrantTypeIntsByUserUUIDs(tc.sql, tc.orgUUID, tc.userUUIDs)
 		assert.EqualValues(suite.T(), tc.expected, mapUserGrantTypeInts, name)
-
 	}
 
 }
@@ -445,7 +444,7 @@ func (suite *testSuite) TestListOrgUserGrantsByType() {
 
 	for name, tc := range data_suite {
 		userGrants, _ := license.ListOrgUserGrantsByType(tc.sql, tc.orgUUID, tc.licenseType)
-		assert.EqualValues(suite.T(), tc.expected, userGrants, name)
+		assert.ElementsMatch(suite.T(), tc.expected, userGrants, name)
 	}
 
 }
@@ -481,7 +480,6 @@ func (suite *testSuite) TestMapOrgLicenseGrantCount() {
 
 }
 
-// todo
 // 授予组织下某个用户对应LicenseType
 func (suite *testSuite) TestGrantLicenseToUser() {
 
@@ -492,10 +490,6 @@ func (suite *testSuite) TestGrantLicenseToUser() {
 		licenseType license.LicenseType
 		expected    interface{}
 	}
-
-	// 调用GetUserGrantByType查询授予情况
-	// 有授予则回收--授予--调用GetUserGrantByType查询授予情况
-	// 无授予--授予-调用GetUserGrantByType查询授予情况
 
 	orgUUID := uuid.UUID()
 	userUUID := uuid.UUID()
@@ -532,7 +526,7 @@ func (suite *testSuite) TestGrantLicenseToUser() {
 		"传入错误的userUUID：返回报错信息": {
 			suite.sqlExecutor,
 			orgUUID,
-			"123user",
+			"",
 			licenseType,
 			"",
 		},
@@ -679,35 +673,35 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 			licenseTypes,
 			[]int{license.LicenseTypeProject}, // 失败授权应用
 		},
-		"传入错误的orgUUID：返回报错信息": {
+		"传入错误的orgUUID：应用授权失败": {
 			tx,
 			"123org",
 			userUUID01,
 			licenseTypes,
-			"",
+			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
 		},
-		"传入错误的license：返回报错信息": {
+		"传入错误的license：应用授权失败": {
 			tx,
 			orgUUID01,
 			userUUID01,
 			[]license.LicenseType{licenseTypes[0], license.GetLicenseType(100)},
-			"",
+			[]int{license.LicenseTypeProject, 100},
 		},
-		"传入错误的userUUID：返回报错信息": {
+		"传入错误的userUUID：应用授权失败": {
 			tx,
 			orgUUID01,
 			"123user",
 			licenseTypes,
-			"",
+			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
 		},
 	}
 	for name, tc := range data_suite {
 		_, failedTypes, err := license.GrantLicensesToUser(tc.tx, tc.orgUUID, tc.userUUID, tc.types)
-		if strings.Contains(name, "成功") {
-			assert.Nil(suite.T(), err, name)
-			assert.EqualValues(suite.T(), tc.expected, failedTypes, name)
-		} else if strings.Contains(name, "报错") {
+		if strings.Contains(name, "报错") {
 			assert.Error(suite.T(), err, name)
+		} else {
+			assert.Nil(suite.T(), err, name)
+			assert.ElementsMatch(suite.T(), tc.expected, failedTypes, name)
 		}
 	}
 
@@ -754,7 +748,7 @@ func (suite *testSuite) TestReclaimUserGrant() {
 			"555",
 			licenseType,
 			nil,
-		}, "传入错误的licenseType回收授权：返回nil": {
+		}, "传入错误的licenseType回收授权：返回报错": {
 			suite.sqlExecutor,
 			orgUUID,
 			userUUID,
@@ -769,6 +763,8 @@ func (suite *testSuite) TestReclaimUserGrant() {
 		if strings.Contains(name, "成功") {
 			licenseUserGrant, _ := license.GetUserGrantByType(suite.sqlExecutor, tc.orgUUID, tc.userUUID, tc.tpe)
 			assert.Nil(suite.T(), licenseUserGrant, name)
+		} else if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
 		}
 	}
 
@@ -924,7 +920,7 @@ func (suite *testSuite) TestBatchReclaimUsersGrant() {
 			[]string{"123", "456"},
 			licenseType,
 			"",
-		}, "传入错误的licenseType回收授权：返回nil": {
+		}, "传入错误的licenseType回收授权：返回报错": {
 			suite.sqlExecutor,
 			orgUUID,
 			hasGrantUsers,
@@ -944,6 +940,8 @@ func (suite *testSuite) TestBatchReclaimUsersGrant() {
 			}
 		} else if strings.Contains(name, "nil") {
 			assert.Nil(suite.T(), err, name)
+		} else if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
 		}
 	}
 
@@ -1016,8 +1014,29 @@ func (suite *testSuite) TestBatchReclaimUsersGrants() {
 
 }
 
-func (suite *testSuite) TestNa() {
-	fmt.Println("1111")
+// 有account的license情况下，直接查询ListUserGrantTypeInts会带有account。
+func (suite *testSuite) TestHasAccountThenGetListUserGrantTypeInts() {
+	orgUUID := uuid.UUID()
+	userUUID := uuid.UUID()
+	suite.ManulAddLicense(orgUUID, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
+	ints, err := license.ListUserGrantTypeInts(suite.sqlExecutor, orgUUID, userUUID)
+	assert.Nil(suite.T(), err)
+	assert.EqualValues(suite.T(), []int{6}, ints, "有account的license情况: 查询成功，返回数组带有account信息")
+}
+
+// 有account的license情况下，直接查询MapUserGrantTypeIntsByUserUUIDs会带有account。
+func (suite *testSuite) TestHasAccountThenGetMapUserGrantTypeIntsByUserUUIDs() {
+	orgUUID := uuid.UUID()
+	userUUID01 := uuid.UUID()
+	userUUID02 := uuid.UUID()
+	suite.ManulAddLicense(orgUUID, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
+	// map[userUUID]map[licenseTypeInt][status]
+	mapUserGrantTypeIntsByUserUUIDs, err := license.MapUserGrantTypeIntsByUserUUIDs(suite.sqlExecutor, orgUUID, []string{userUUID01, userUUID02})
+	myExpectedMap := make(map[string]map[int]int)
+	myExpectedMap[userUUID01] = map[int]int{license.LicenseTypeAccount: 1}
+	myExpectedMap[userUUID02] = map[int]int{license.LicenseTypeAccount: 1}
+	assert.Nil(suite.T(), err)
+	assert.EqualValues(suite.T(), myExpectedMap, mapUserGrantTypeIntsByUserUUIDs, "有account的license情况: 查询成功，返回map带有account信息")
 }
 
 func TestSuite(t *testing.T) {
