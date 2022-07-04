@@ -104,9 +104,9 @@ func (suite *testSuite) BatchInsertLicensAndGrant() ([]string, map[string][]stri
 	ug6 := licenseGrant{orgId2, license.LicenseTypeProject, userId4, 1}
 	ug7 := licenseGrant{orgId2, license.LicenseTypeWiki, userId3, 1}
 	ug8 := licenseGrant{orgId2, license.LicenseTypeWiki, userId4, 1}
-	licenseGrant := []*licenseGrant{&ug1, &ug2, &ug3, &ug4, &ug5, &ug6, &ug7, &ug8}
+	myLicenseGrant := []*licenseGrant{&ug1, &ug2, &ug3, &ug4, &ug5, &ug6, &ug7, &ug8}
 	_, err2 := suite.db.NamedExec("INSERT INTO license_grant (org_uuid, type, user_uuid, status) "+
-		"VALUES (:org_uuid, :type, :user_uuid, :status)", licenseGrant)
+		"VALUES (:org_uuid, :type, :user_uuid, :status)", myLicenseGrant)
 
 	if err != nil {
 		fmt.Printf("BatchInsertLicense执行失败: %v", err)
@@ -120,13 +120,14 @@ func (suite *testSuite) BatchInsertLicensAndGrant() ([]string, map[string][]stri
 	return orgIds, orgUserMap, err
 }
 
-// 构造licenseTag·
+// 构造licenseTag
 func AddLicenseTag(typeInt int, editionName string) license.LicenseTag {
 	licenseType := license.GetLicenseType(typeInt)
 	licenseTag := license.LicenseTag{licenseType, editionName}
 	return licenseTag
 }
 
+// 构造License
 func (suite *testSuite) ManulAddLicense(orgUUID string, typeInt int, edition string, scale int, expire_time int64) {
 	_, err := license.AddLicense(suite.sqlExecutor, license.AddTypePay, &license.LicenseAdd{orgUUID, scale, expire_time, AddLicenseTag(typeInt, edition)})
 	if err != nil {
@@ -188,7 +189,7 @@ func (suite *testSuite) TestGetUserGrantByType() {
 
 	// 测试数据
 	data_suite := map[string]test{
-		"传入1个应用licenseType，其中A应用scale未到上限：成功，A应用授权成功": {
+		"传入1个应用licenseType，其中A应用scale未到上限：成功，返回对应内容": {
 			suite.sqlExecutor,
 			newOrgUUID01,
 			newUserUUID01,
@@ -684,7 +685,7 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 			licenseTypes,
 			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
 		},
-		"传入错误的license：应用授权失败": {
+		"传入2个licenseType，1个正确和1个错误的license应用授权失败": {
 			tx,
 			orgUUID01,
 			userUUID01,
