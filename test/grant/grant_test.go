@@ -757,14 +757,14 @@ func (suite *testSuite) TestReclaimUserGrant() {
 			license.GetLicenseType(100),
 			nil,
 		},
-		"传入组织id为空串回收授权：返回nil": {
+		"传入组织id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			"",
 			userUUID,
 			licenseType,
 			nil,
 		},
-		"传入用户id为空串回收授权：返回nil": {
+		"传入用户id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			orgUUID,
 			"",
@@ -838,14 +838,14 @@ func (suite *testSuite) TestReclaimUserGrants() {
 			[]license.LicenseType{license.GetLicenseType(100)},
 			"",
 		},
-		"传入组织id为空串回收授权：返回nil": {
+		"传入组织id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			"",
 			userUUID,
 			licenseTypes,
 			nil,
 		},
-		"传入用户id为空串回收授权：返回nil": {
+		"传入用户id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			orgUUID,
 			"",
@@ -907,13 +907,13 @@ func (suite *testSuite) TestReclaimUserAllGrant() {
 			"555",
 			nil,
 		},
-		"传入组织id为空串回收授权：返回nil": {
+		"传入组织id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			"",
 			userUUID,
 			nil,
 		},
-		"传入用户id为空串回收授权：返回nil": {
+		"传入用户id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			orgUUID,
 			"",
@@ -928,6 +928,8 @@ func (suite *testSuite) TestReclaimUserAllGrant() {
 			assert.EqualValues(suite.T(), tc.expected, licenseUserGrants, name)
 		} else if strings.Contains(name, "nil") {
 			assert.Nil(suite.T(), err, name)
+		} else if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
 		}
 	}
 }
@@ -980,14 +982,14 @@ func (suite *testSuite) TestBatchReclaimUsersGrant() {
 			license.GetLicenseType(100),
 			"",
 		},
-		"传入用户id为空串回收授权：返回nil": {
+		"传入用户id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]string{""},
 			licenseType,
 			"",
 		},
-		"传入组织id为空串回收授权：返回nil": {
+		"传入组织id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			"",
 			hasGrantUsers,
@@ -1066,14 +1068,14 @@ func (suite *testSuite) TestBatchReclaimUsersGrants() {
 			[]license.LicenseType{license.GetLicenseType(100)},
 			"",
 		},
-		"传入组织id为空串回收授权：返回nil": {
+		"传入组织id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			"",
 			hasGrantUsers,
 			licenseTypes,
 			"",
 		},
-		"传入用户id为空串回收授权：返回nil": {
+		"传入用户id为空串回收授权：返回报错": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]string{""},
