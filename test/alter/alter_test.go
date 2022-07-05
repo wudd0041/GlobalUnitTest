@@ -191,7 +191,7 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndType() {
 			exitLicenseAlter.LicenseType,
 			[]*license.LicenseAlter{},
 		},
-		"传入错误的licenseType，查询alter记录：返回空记录": {
+		"传入错误的licenseType，查询alter记录：返回报错": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
@@ -203,7 +203,7 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndType() {
 			exitLicenseAlter.LicenseType,
 			[]*license.LicenseAlter{},
 		},
-		"传入licenseType为nil，查询alter记录：返回空记录": {
+		"传入licenseType为nil，查询alter记录：返回报错": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			nil,
@@ -212,8 +212,13 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndType() {
 	}
 
 	for name, tc := range data_suite {
-		licenseAlters, _ := license.ListLicenseAltersByOrgUUIDAndType(tc.sql, tc.orgUUID, tc.licenseType)
-		assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
+		licenseAlters, err := license.ListLicenseAltersByOrgUUIDAndType(tc.sql, tc.orgUUID, tc.licenseType)
+		if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
+		} else {
+			assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
+
+		}
 	}
 
 }
@@ -248,7 +253,7 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 			exitLicenseAlter.EditionName,
 			[]*license.LicenseAlter{},
 		},
-		"传入不存在的licenseType，查询alter记录：返回空记录": {
+		"传入不存在的licenseType，查询alter记录：返回报错": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
@@ -269,7 +274,7 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 			exitLicenseAlter.EditionName,
 			[]*license.LicenseAlter{},
 		},
-		"传入licenseType为nil，查询alter记录：返回空记录": {
+		"传入licenseType为nil，查询alter记录：返回报错": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			nil,
@@ -286,11 +291,13 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 	}
 
 	for name, tc := range data_suite {
-		licenseAlters, _ := license.ListLicenseAltersByOrgUUIDAndTypeEdition(tc.sql, tc.orgUUID, tc.licenseType, tc.edition)
+		licenseAlters, err := license.ListLicenseAltersByOrgUUIDAndTypeEdition(tc.sql, tc.orgUUID, tc.licenseType, tc.edition)
 		if strings.Contains(name, "成功") {
 			assert.Contains(suite.T(), licenseAlters, tc.expected, name)
-		} else {
+		} else if strings.Contains(name, "空") {
 			assert.EqualValues(suite.T(), tc.expected, licenseAlters, name)
+		} else if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
 		}
 	}
 

@@ -201,17 +201,6 @@ func (suite *testSuite) TestAddLicense() {
 			},
 			"",
 		},
-		"传入不存在的addType: 返回报错信息": {
-			suite.sqlExecutor,
-			100,
-			&license.LicenseAdd{
-				suite.orgIds[0],
-				100,
-				-1,
-				AddLicenseTag(license.LicenseTypeWiki, license.EditionEnterprise),
-			},
-			"",
-		},
 		"传入addLicense为nil: 返回报错信息": {
 			suite.sqlExecutor,
 			license.AddTypePay,

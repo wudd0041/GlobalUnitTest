@@ -438,11 +438,11 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 			[]string{"123", "456"},
 			map[string]map[int]int{},
 		},
-		"传入组织id为空串：返回内容为空": {
+		"传入组织id为空串：返回报错": {
 			suite.sqlExecutor,
 			"",
 			userUUIDs,
-			map[string]map[int]int{}, // todo
+			"",
 		},
 		"传入用户id为空串：返回内容为空": {
 			suite.sqlExecutor,
@@ -453,8 +453,12 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 	}
 
 	for name, tc := range data_suite {
-		mapUserGrantTypeInts, _ := license.MapUserGrantTypeIntsByUserUUIDs(tc.sql, tc.orgUUID, tc.userUUIDs)
-		assert.EqualValues(suite.T(), tc.expected, mapUserGrantTypeInts, name)
+		mapUserGrantTypeInts, err := license.MapUserGrantTypeIntsByUserUUIDs(tc.sql, tc.orgUUID, tc.userUUIDs)
+		if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
+		} else {
+			assert.EqualValues(suite.T(), tc.expected, mapUserGrantTypeInts, name)
+		}
 
 	}
 
