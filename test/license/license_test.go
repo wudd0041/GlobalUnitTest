@@ -142,7 +142,6 @@ func (suite *testSuite) GetLicenseDefaultGrant(orgUUID string) []*license.Licens
 		fmt.Println("数据库执行失败: ", err)
 		panic(err)
 	}
-	fmt.Printf("查询成功-表license_default_grant:%v\n", orgLicenseDefaultGrants)
 
 	licenseDefaultGrants := []*license.LicenseDefaultGrant{}
 	for _, v := range orgLicenseDefaultGrants {
@@ -806,7 +805,6 @@ func (suite *testSuite) TestGetOrgLicenses() {
 		expected interface{}
 	}
 
-	// todo 手工创建
 	orgLicenses := []*license.LicenseEntity{}
 	for _, v := range []int{1, 2, 3, 4, 5, 6, 7, 8} {
 		licenseEntity, _ := license.GetOrgLicenseByType(suite.sqlExecutor, suite.orgIds[0], license.GetLicenseType(v))
@@ -938,7 +936,7 @@ func (suite *testSuite) TestGetOrgAllLicensesMap() {
 			orgUUID,
 			license.EditionEnterpriseTrial,
 		},
-		"传入错误的组织UUID：返回空对象": {
+		"传入错误的组织UUID：返回内容为空": {
 			suite.sqlExecutor,
 			"123auto",
 			map[int][]*license.LicenseEntity{},
@@ -1018,22 +1016,26 @@ func (suite *testSuite) TestGetOrgLicenseByType() {
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 10, -1)
 
 	data_suite := map[string]test{
-		"传入project的licenseType: 查询成功，返回应用免费版licenseEntity,scale为10": {suite.sqlExecutor,
+		"传入project的licenseType: 查询成功，返回应用免费版licenseEntity,scale为10": {
+			suite.sqlExecutor,
 			orgUUID,
 			licenseType,
 			10},
 
-		"传入错误的orgUUID：返回nil": {suite.sqlExecutor,
+		"传入错误的orgUUID：返回nil": {
+			suite.sqlExecutor,
 			orgUUID + "123",
 			licenseType,
 			nil},
 
-		"orgUUID为空串：返回nil": {suite.sqlExecutor,
+		"orgUUID为空串：返回nil": {
+			suite.sqlExecutor,
 			"",
 			licenseType,
 			nil},
 
-		"licenseType为nil：返回nil": {suite.sqlExecutor,
+		"licenseType为nil：返回nil": {
+			suite.sqlExecutor,
 			orgUUID,
 			nil,
 			nil},

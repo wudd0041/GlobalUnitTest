@@ -103,9 +103,14 @@ func (suite *testSuite) TestMapLicenseAltersByUUIDs() {
 			[]string{exitUUID},
 			map[string]*license.LicenseAlter{exitUUID: exitLicenseAlter},
 		},
-		"传入不存在的alterUUID，查询alter记录：返回空记录": {
+		"传入非空不存在的alterUUID，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			[]string{"1234auto"},
+			map[string]*license.LicenseAlter{},
+		},
+		"传入空串的alterUUID，查询alter记录：返回空记录": {
+			suite.sqlExecutor,
+			[]string{""},
 			map[string]*license.LicenseAlter{},
 		},
 	}
@@ -145,6 +150,11 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUID() {
 			"123auto",
 			[]*license.LicenseAlter{},
 		},
+		"传入空串组织id，查询alter记录：返回空记录": {
+			suite.sqlExecutor,
+			"",
+			[]*license.LicenseAlter{},
+		},
 	}
 
 	for name, tc := range data_suite {
@@ -180,10 +190,23 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndType() {
 			"123",
 			exitLicenseAlter.LicenseType,
 			[]*license.LicenseAlter{},
-		}, "传入错误的licenseType，查询alter记录：返回空记录": {
+		},
+		"传入错误的licenseType，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
+			[]*license.LicenseAlter{},
+		},
+		"传入空串的组织id，查询alter记录：返回空记录": {
+			suite.sqlExecutor,
+			"",
+			exitLicenseAlter.LicenseType,
+			[]*license.LicenseAlter{},
+		},
+		"传入licenseType为nil，查询alter记录：返回空记录": {
+			suite.sqlExecutor,
+			suite.orgIds[0],
+			nil,
 			[]*license.LicenseAlter{},
 		},
 	}
@@ -218,25 +241,46 @@ func (suite *testSuite) TestListLicenseAltersByOrgUUIDAndTypeEdition() {
 			exitLicenseAlter.EditionName,
 			exitLicenseAlter,
 		},
-		"传入错误的组织id，查询alter记录：返回空记录": {
+		"传入不存在的组织id，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			"123auto",
 			licenseType,
 			exitLicenseAlter.EditionName,
 			[]*license.LicenseAlter{},
 		},
-		"传入错误的licenseType，查询alter记录：返回空记录": {
+		"传入不存在的licenseType，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
 			exitLicenseAlter.EditionName,
 			[]*license.LicenseAlter{},
 		},
-		"传入错误的edition，查询alter记录：返回空记录": {
+		"传入不存在的edition，查询alter记录：返回空记录": {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			licenseType,
 			"123autotest",
+			[]*license.LicenseAlter{},
+		},
+		"传入为空串的组织id，查询alter记录：返回空记录": {
+			suite.sqlExecutor,
+			"",
+			licenseType,
+			exitLicenseAlter.EditionName,
+			[]*license.LicenseAlter{},
+		},
+		"传入licenseType为nil，查询alter记录：返回空记录": {
+			suite.sqlExecutor,
+			suite.orgIds[0],
+			nil,
+			exitLicenseAlter.EditionName,
+			[]*license.LicenseAlter{},
+		},
+		"传入为空串的edition，查询alter记录：返回空记录": {
+			suite.sqlExecutor,
+			suite.orgIds[0],
+			licenseType,
+			"",
 			[]*license.LicenseAlter{},
 		},
 	}

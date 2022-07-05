@@ -196,33 +196,54 @@ func (suite *testSuite) TestGetUserGrantByType() {
 			licenseTypeProject,
 			&license.LicenseUserGrant{licenseTag, newUserUUID01, 1},
 		},
-		"传入1个应用licenseType，其中A应用scale达到上限：A应用授权失败，返回nil": {
+		"传入1个应用licenseType，其中A应用scale达到上限：失败，返回nil": {
 			suite.sqlExecutor,
 			newOrgUUID02,
 			newUserUUID02,
 			licenseTypeProject,
 			nil,
 		},
-		"传入错误的orgUUID：返回nil": {
+		"传入非空且不存在的orgUUID：返回nil": {
 			suite.sqlExecutor,
 			"123org",
-			newOrgUUID01,
+			newUserUUID01,
 			licenseTypeProject,
 			nil,
 		},
-		"传入错误的license：返回报错": {
+		"传入不存在的licenseType：返回报错": {
 			suite.sqlExecutor,
 			newOrgUUID01,
 			newUserUUID01,
 			license.GetLicenseType(100),
 			"",
 		},
-		"传入错误的userUUID：返回nil": {
+		"传入非空且不存在的userUUID：返回nil": {
 			suite.sqlExecutor,
 			newOrgUUID01,
 			"123user",
 			licenseTypeProject,
 			nil,
+		},
+		"传入orgUUID为空串：返回nil": {
+			suite.sqlExecutor,
+			"",
+			newUserUUID01,
+			licenseTypeProject,
+			nil,
+		},
+		"传入userUUID为空串：返回nil": {
+			suite.sqlExecutor,
+			newOrgUUID01,
+			"",
+			licenseTypeProject,
+			nil,
+		},
+		"传入licenseType为nil：返回报错信息": {
+			suite.sqlExecutor,
+			newOrgUUID01,
+			newUserUUID01,
+			nil,
+			"",
 		},
 	}
 	for name, tc := range data_suite {
@@ -279,6 +300,18 @@ func (suite *testSuite) TestListUserGrants() {
 			"123auto",
 			[]*license.LicenseUserGrant{},
 		},
+		"传入空串的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
+			suite.sqlExecutor,
+			"",
+			userUUID,
+			[]*license.LicenseUserGrant{},
+		},
+		"传入正确的组织id和空串的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
+			suite.sqlExecutor,
+			orgUUID,
+			"",
+			[]*license.LicenseUserGrant{},
+		},
 	}
 
 	for name, tc := range data_suite {
@@ -327,6 +360,18 @@ func (suite *testSuite) TestListUserGrantTypeInts() {
 			suite.sqlExecutor,
 			orgUUID,
 			"555",
+			[]int{},
+		},
+		"传入空串的组织id和正确的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
+			suite.sqlExecutor,
+			"",
+			userUUID,
+			[]int{},
+		},
+		"传入正确组织id和空串的用户id，查询用户所有LicenseType授权列表：返回内容为空": {
+			suite.sqlExecutor,
+			orgUUID,
+			"",
 			[]int{},
 		},
 	}
@@ -394,6 +439,18 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 			[]string{"123", "456"},
 			map[string]map[int]int{},
 		},
+		"传入组织id为空串：返回内容为空": {
+			suite.sqlExecutor,
+			"",
+			userUUIDs,
+			map[string]map[int]int{},
+		},
+		"传入用户id为空串：返回内容为空": {
+			suite.sqlExecutor,
+			orgUUID,
+			[]string{""},
+			map[string]map[int]int{},
+		},
 	}
 
 	for name, tc := range data_suite {
@@ -430,7 +487,7 @@ func (suite *testSuite) TestListOrgUserGrantsByType() {
 			licenseType,
 			orgUserGrants,
 		},
-		"传入错误的组织id：返回内容为空": {
+		"传入非空且没有license的组织id：返回内容为空": {
 			suite.sqlExecutor,
 			"123",
 			licenseType,
@@ -440,6 +497,18 @@ func (suite *testSuite) TestListOrgUserGrantsByType() {
 			suite.sqlExecutor,
 			orgUUID,
 			license.GetLicenseType(100),
+			[]*license.LicenseUserGrant{},
+		},
+		"传入组织id为空串：返回内容为空": {
+			suite.sqlExecutor,
+			"",
+			licenseType,
+			[]*license.LicenseUserGrant{},
+		},
+		"传入license为nil：返回内容为空": {
+			suite.sqlExecutor,
+			orgUUID,
+			nil,
 			[]*license.LicenseUserGrant{},
 		},
 	}
@@ -467,7 +536,7 @@ func (suite *testSuite) TestMapOrgLicenseGrantCount() {
 			orgUUID,
 			suite.GetOrgLicenseTypeCount(orgUUID), // 直接查库
 		},
-		"传入错误的组织id：返回内容为空": {
+		"传入非空且没有license的组织id：返回内容为空": {
 			suite.sqlExecutor,
 			"123",
 			map[int]int{},
@@ -516,7 +585,7 @@ func (suite *testSuite) TestGrantLicenseToUser() {
 			licenseType,
 			nil,
 		},
-		"传入错误的orgUUID：返回报错信息": {
+		"传入非空且没有license的orgUUID：返回报错信息": {
 			suite.sqlExecutor,
 			"123org",
 			userUUID,
@@ -530,11 +599,18 @@ func (suite *testSuite) TestGrantLicenseToUser() {
 			license.GetLicenseType(100),
 			"",
 		},
-		"传入错误的userUUID：返回报错信息": {
+		"传入userUUID为空串：返回报错信息": {
 			suite.sqlExecutor,
 			orgUUID,
 			"",
 			licenseType,
+			"",
+		},
+		"传入licenseType为nil：返回报错信息": {
+			suite.sqlExecutor,
+			orgUUID,
+			userUUID,
+			nil,
 			"",
 		},
 	}
@@ -579,14 +655,14 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 			licenseType,
 			[]string{userUUID02},
 		},
-		"传入错误的orgUUID：返回报错信息": {
+		"传入非空且不存在的orgUUID：返回报错信息": {
 			suite.sqlExecutor,
 			"123org",
 			[]string{userUUID01, userUUID02},
 			licenseType,
 			"",
 		},
-		"传入错误的userUUID：返回报错信息": {
+		"传入userUUID为空串：返回报错信息": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]string{""},
@@ -598,6 +674,13 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 			orgUUID,
 			[]string{userUUID01, userUUID02},
 			license.GetLicenseType(100),
+			"",
+		},
+		"传入licenseType为nil：返回报错信息": {
+			suite.sqlExecutor,
+			orgUUID,
+			[]string{userUUID01, userUUID02},
+			nil,
 			"",
 		},
 	}
@@ -614,7 +697,6 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 }
 
 // 授予组织下某个用户多个LicenseType
-// todo
 func (suite *testSuite) TestGrantLicensesToUser() {
 
 	type test struct {
@@ -680,7 +762,7 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 			licenseTypes,
 			[]int{license.LicenseTypeProject}, // 失败授权应用
 		},
-		"传入错误的orgUUID：应用授权失败": {
+		"传入非空且不存在的orgUUID：应用授权失败": {
 			tx,
 			"123org",
 			userUUID01,
@@ -694,12 +776,40 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 			[]license.LicenseType{licenseTypes[0], license.GetLicenseType(100)},
 			[]int{license.LicenseTypeProject, license.LicenseTypeInvalid},
 		},
-		"传入错误的userUUID：应用授权成功": {
+		"传入非空且不存在的userUUID：应用授权成功": {
 			tx,
 			orgUUID01,
 			"123user",
 			licenseTypes,
 			[]int{license.LicenseTypeProject},
+		},
+		"传入userUUID为空串：应用授权失败": {
+			tx,
+			orgUUID01,
+			"",
+			licenseTypes,
+			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+		},
+		"传入orgUUID为空串：应用授权失败": {
+			tx,
+			"",
+			userUUID01,
+			licenseTypes,
+			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+		},
+		"传入licenseType为nil：返回报错信息": {
+			tx,
+			"",
+			userUUID01,
+			nil,
+			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+		},
+		"传入licenseType数组为空：返回报错信息": {
+			tx,
+			"",
+			userUUID01,
+			[]license.LicenseType{},
+			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
 		},
 	}
 	for name, tc := range data_suite {
