@@ -155,7 +155,6 @@ func (suite *testSuite) GetOrgLicenseTypeCount(orgUUID string) map[int]int {
 		TypeCountMap[typeCount.Type] = typeCount.Count
 	}
 
-	fmt.Printf("查询成功-组织下type-count:%v\n", TypeCountMap)
 	return TypeCountMap
 }
 
@@ -224,19 +223,19 @@ func (suite *testSuite) TestGetUserGrantByType() {
 			licenseTypeProject,
 			nil,
 		},
-		"传入orgUUID为空串：返回nil": {
+		"传入orgUUID为空串：返回报错信息": {
 			suite.sqlExecutor,
 			"",
 			newUserUUID01,
 			licenseTypeProject,
-			nil,
+			"",
 		},
-		"传入userUUID为空串：返回nil": {
+		"传入userUUID为空串：返回报错信息": {
 			suite.sqlExecutor,
 			newOrgUUID01,
 			"",
 			licenseTypeProject,
-			nil,
+			"",
 		},
 		"传入licenseType为nil：返回报错信息": {
 			suite.sqlExecutor,
@@ -250,7 +249,7 @@ func (suite *testSuite) TestGetUserGrantByType() {
 		userGrant, err := license.GetUserGrantByType(tc.sql, tc.orgUUID, tc.userUUID, tc.licenseType)
 		if strings.Contains(name, "成功") {
 			assert.EqualValues(suite.T(), tc.expected, userGrant, name)
-		} else if strings.Contains(name, "nil") {
+		} else if strings.Contains(name, "返回nil") {
 			assert.Nil(suite.T(), err, name)
 		} else if strings.Contains(name, "报错") {
 			assert.Error(suite.T(), err, name)
@@ -443,7 +442,7 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 			suite.sqlExecutor,
 			"",
 			userUUIDs,
-			map[string]map[int]int{},
+			map[string]map[int]int{}, // todo
 		},
 		"传入用户id为空串：返回内容为空": {
 			suite.sqlExecutor,
@@ -456,6 +455,7 @@ func (suite *testSuite) TestMapUserGrantTypeIntsByUserUUIDs() {
 	for name, tc := range data_suite {
 		mapUserGrantTypeInts, _ := license.MapUserGrantTypeIntsByUserUUIDs(tc.sql, tc.orgUUID, tc.userUUIDs)
 		assert.EqualValues(suite.T(), tc.expected, mapUserGrantTypeInts, name)
+
 	}
 
 }
@@ -783,39 +783,44 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 			licenseTypes,
 			[]int{license.LicenseTypeProject},
 		},
-		"传入userUUID为空串：应用授权失败": {
+		"传入userUUID为空串：返回报错信息": {
 			tx,
 			orgUUID01,
 			"",
 			licenseTypes,
-			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+			"",
 		},
-		"传入orgUUID为空串：应用授权失败": {
+		"传入orgUUID为空串：返回报错信息": {
 			tx,
 			"",
 			userUUID01,
 			licenseTypes,
-			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+			"",
 		},
 		"传入licenseType为nil：返回报错信息": {
 			tx,
 			"",
 			userUUID01,
 			nil,
-			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+			"",
 		},
 		"传入licenseType数组为空：返回报错信息": {
 			tx,
 			"",
 			userUUID01,
 			[]license.LicenseType{},
-			[]int{license.LicenseTypeProject, license.LicenseTypeWiki},
+			"",
 		},
 	}
 	for name, tc := range data_suite {
 		_, failedTypes, err := license.GrantLicensesToUser(tc.tx, tc.orgUUID, tc.userUUID, tc.types)
-		assert.Nil(suite.T(), err, name)
-		assert.ElementsMatch(suite.T(), tc.expected, failedTypes, name)
+		if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
+		} else {
+			assert.Nil(suite.T(), err, name)
+			assert.ElementsMatch(suite.T(), tc.expected, failedTypes, name)
+		}
+
 	}
 
 }

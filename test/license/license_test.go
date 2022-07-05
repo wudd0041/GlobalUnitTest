@@ -646,7 +646,7 @@ func (suite *testSuite) TestAddOrUpdateOrgDefaultGrant() {
 					assert.True(suite.T(), v.DefaultGrant, name)
 				}
 			}
-		} else if strings.Contains(name, "nil") {
+		} else if strings.Contains(name, "返回nil") {
 			assert.Nil(suite.T(), err, name)
 		} else if strings.Contains(name, "报错") {
 			assert.Error(suite.T(), err, name)
@@ -693,13 +693,13 @@ func (suite *testSuite) TestBatchAddOrUpdateOrgDefaultGrants() {
 			suite.sqlExecutor,
 			orgUUID,
 			[]*license.LicenseDefaultGrant{},
-			nil,
+			"",
 		},
 		"新增不存在组织的1个license默认授权配置为nil:返回报错信息": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]*license.LicenseDefaultGrant{nil},
-			nil,
+			"",
 		},
 	}
 
@@ -712,7 +712,7 @@ func (suite *testSuite) TestBatchAddOrUpdateOrgDefaultGrants() {
 					assert.EqualValues(suite.T(), tc.expected, v.DefaultGrant, name)
 				}
 			}
-		} else if strings.Contains(name, "nil") {
+		} else if strings.Contains(name, "返回nil") {
 			assert.Nil(suite.T(), err, name)
 		} else if strings.Contains(name, "报错") {
 			assert.Error(suite.T(), err, name)
@@ -740,7 +740,7 @@ func (suite *testSuite) TestGetOrgDefaultGrantLicenses() {
 		},
 		"查询不存在组织的默认授权配置：返回内容为空": {
 			suite.sqlExecutor,
-			"123",
+			"123autoOrg",
 			[]*license.LicenseDefaultGrant{},
 		},
 	}
