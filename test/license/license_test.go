@@ -186,7 +186,7 @@ func (suite *testSuite) TestAddLicense() {
 				suite.orgIds[0],
 				100,
 				-1,
-				AddLicenseTag(license.LicenseTypeProject, license.EditionEnterprise), // edition格式：auto+时间戳
+				AddLicenseTag(license.LicenseTypeProject, license.EditionEnterprise),
 			},
 			AddLicenseTag(license.LicenseTypeProject, license.EditionEnterprise),
 		},
@@ -199,6 +199,23 @@ func (suite *testSuite) TestAddLicense() {
 				-1,
 				licenseTag,
 			},
+			"",
+		},
+		"传入不存在的addType: 返回报错信息": {
+			suite.sqlExecutor,
+			100,
+			&license.LicenseAdd{
+				suite.orgIds[0],
+				100,
+				-1,
+				AddLicenseTag(license.LicenseTypeWiki, license.EditionEnterprise),
+			},
+			"",
+		},
+		"传入addLicense为nil: 返回报错信息": {
+			suite.sqlExecutor,
+			license.AddTypePay,
+			nil,
 			"",
 		},
 	}
@@ -230,7 +247,8 @@ func (suite *testSuite) TestBatchAddLicenses() {
 	existOrgUUID := suite.orgIds[0]
 
 	data_suite := map[string]test{
-		"传入2个完全不存在的licenseTag：添加证书成功": {suite.sqlExecutor,
+		"传入2个完全不存在的licenseTag：添加证书成功": {
+			suite.sqlExecutor,
 			license.AddTypePay,
 			[]*license.LicenseAdd{
 				{
@@ -251,7 +269,8 @@ func (suite *testSuite) TestBatchAddLicenses() {
 				AddLicenseTag(license.LicenseTypePerformance, license.EditionEnterpriseTrial),
 			},
 		},
-		"传入2个重复且不存在的licenseTag：返回报错信息": {suite.sqlExecutor,
+		"传入2个重复且不存在的licenseTag：返回报错信息": {
+			suite.sqlExecutor,
 			license.AddTypePay,
 			[]*license.LicenseAdd{
 				{
@@ -269,7 +288,8 @@ func (suite *testSuite) TestBatchAddLicenses() {
 			},
 			"",
 		},
-		"传入1个不存在和1个存在的licenseTag：返回报错信息": {suite.sqlExecutor,
+		"传入1个不存在和1个存在的licenseTag：返回报错信息": {
+			suite.sqlExecutor,
 			license.AddTypePay,
 			[]*license.LicenseAdd{
 				{
@@ -287,7 +307,8 @@ func (suite *testSuite) TestBatchAddLicenses() {
 			},
 			"",
 		},
-		"传入1个不存在addType：返回报错信息": {suite.sqlExecutor,
+		"传入1个不存在addType：返回报错信息": {
+			suite.sqlExecutor,
 			1000,
 			[]*license.LicenseAdd{
 				{
@@ -297,6 +318,18 @@ func (suite *testSuite) TestBatchAddLicenses() {
 					AddLicenseTag(license.LicenseTypeDesk, license.EditionEnterprise),
 				},
 			},
+			"",
+		},
+		"传入addLicense为nil：返回报错信息": {
+			suite.sqlExecutor,
+			license.AddTypePay,
+			[]*license.LicenseAdd{nil},
+			"",
+		},
+		"传入addLicense为空：返回报错信息": {
+			suite.sqlExecutor,
+			license.AddTypePay,
+			[]*license.LicenseAdd{},
 			"",
 		},
 	}
@@ -522,7 +555,8 @@ func (suite *testSuite) TestBatchRenewalOrgLicenseExpire() {
 				{New: &license.LicenseAlterInfo{ExpireTime: time.Now().Unix() + 60}},
 				{New: &license.LicenseAlterInfo{ExpireTime: time.Now().Unix() + 60}},
 			},
-		}, "分别更新组织的1个存在和不存在的license过期时间为当前时间+1分钟后：返回报错信息": {
+		},
+		"分别更新组织的1个存在和不存在的license过期时间为当前时间+1分钟后：返回报错信息": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]*license.LicenseTag{
@@ -595,6 +629,12 @@ func (suite *testSuite) TestAddOrUpdateOrgDefaultGrant() {
 			&defaultGrant,
 			nil,
 		},
+		"新增组织的1个license默认授权配置为nil：返回报错": {
+			suite.sqlExecutor,
+			suite.orgIds[0],
+			nil,
+			"",
+		},
 	}
 
 	for name, tc := range data_suite {
@@ -608,6 +648,8 @@ func (suite *testSuite) TestAddOrUpdateOrgDefaultGrant() {
 			}
 		} else if strings.Contains(name, "nil") {
 			assert.Nil(suite.T(), err, name)
+		} else if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
 		}
 
 	}
@@ -647,6 +689,18 @@ func (suite *testSuite) TestBatchAddOrUpdateOrgDefaultGrants() {
 			defaultGrants,
 			nil,
 		},
+		"新增不存在组织的1个license默认授权配置为空:返回报错信息": {
+			suite.sqlExecutor,
+			orgUUID,
+			[]*license.LicenseDefaultGrant{},
+			nil,
+		},
+		"新增不存在组织的1个license默认授权配置为nil:返回报错信息": {
+			suite.sqlExecutor,
+			orgUUID,
+			[]*license.LicenseDefaultGrant{nil},
+			nil,
+		},
 	}
 
 	for name, tc := range data_suite {
@@ -660,6 +714,8 @@ func (suite *testSuite) TestBatchAddOrUpdateOrgDefaultGrants() {
 			}
 		} else if strings.Contains(name, "nil") {
 			assert.Nil(suite.T(), err, name)
+		} else if strings.Contains(name, "报错") {
+			assert.Error(suite.T(), err, name)
 		}
 
 	}
@@ -682,21 +738,16 @@ func (suite *testSuite) TestGetOrgDefaultGrantLicenses() {
 			suite.orgIds[0],
 			suite.GetLicenseDefaultGrant(suite.orgIds[0]),
 		},
-		"查询不存在组织的默认授权配置：返回nil": {
+		"查询不存在组织的默认授权配置：返回内容为空": {
 			suite.sqlExecutor,
 			"123",
-			nil,
+			[]*license.LicenseDefaultGrant{},
 		},
 	}
 
 	for name, tc := range data_suite {
-		licenseDefaultGrants, err := license.GetOrgDefaultGrantLicenses(tc.sql, tc.orgUUID)
-
-		if strings.Contains(name, "成功") {
-			assert.EqualValues(suite.T(), tc.expected, licenseDefaultGrants, name)
-		} else if strings.Contains(name, "nil") {
-			assert.Nil(suite.T(), err, name)
-		}
+		licenseDefaultGrants, _ := license.GetOrgDefaultGrantLicenses(tc.sql, tc.orgUUID)
+		assert.ElementsMatch(suite.T(), tc.expected, licenseDefaultGrants, name)
 
 	}
 
@@ -820,7 +871,7 @@ func (suite *testSuite) TestGetOrgLicenses() {
 			suite.orgIds[0],
 			orgLicenses,
 		},
-		"传入错误组织UUID：返回空对象": {
+		"传入错误组织UUID：返回内容为空": {
 			suite.sqlExecutor,
 			"123auto",
 			[]*license.LicenseEntity{},
@@ -985,6 +1036,12 @@ func (suite *testSuite) TestGetOrgAllLicensesByType() {
 			suite.sqlExecutor,
 			suite.orgIds[0],
 			license.GetLicenseType(100),
+			"",
+		},
+		"传入应用类型LicenseType为nil：返回报错": {
+			suite.sqlExecutor,
+			suite.orgIds[0],
+			nil,
 			"",
 		},
 	}
