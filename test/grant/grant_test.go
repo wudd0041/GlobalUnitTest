@@ -649,10 +649,10 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 	userUUID02 := uuid.UUID()
 	licenseType := license.GetLicenseType(license.LicenseTypeProject)
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 1, -1)
-	suite.ManulAddLicense(orgUUID, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
 
 	orgUUID03 := uuid.UUID()
 	userUUID03 := uuid.UUID()
+	suite.ManulAddLicense(orgUUID03, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
 
 	// 测试数据
 	data_suite := map[string]test{
@@ -738,7 +738,7 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 
 	orgUUID03 := uuid.UUID()
 	userUUID03 := uuid.UUID()
-	suite.ManulAddLicense(orgUUID02, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
+	suite.ManulAddLicense(orgUUID03, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
 
 	// 开启事务
 	tx, err := dbm.Begin()
@@ -952,7 +952,6 @@ func (suite *testSuite) TestReclaimUserGrants() {
 	userUUID := uuid.UUID()
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 10, -1)
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeWiki, license.EditionTeam, 10, -1)
-	suite.ManulAddLicense(orgUUID, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
 
 	licenseTypes := []license.LicenseType{license.GetLicenseType(license.LicenseTypeProject), license.GetLicenseType(license.LicenseTypeWiki)}
 	for _, licenseType := range licenseTypes {
