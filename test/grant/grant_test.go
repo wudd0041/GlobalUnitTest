@@ -649,10 +649,21 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 	userUUID02 := uuid.UUID()
 	licenseType := license.GetLicenseType(license.LicenseTypeProject)
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 1, -1)
+	suite.ManulAddLicense(orgUUID, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
+
+	orgUUID03 := uuid.UUID()
+	userUUID03 := uuid.UUID()
 
 	// 测试数据
 	data_suite := map[string]test{
-		"传入2个用户id，其中A应用scale为1：用户1授权成功，用户2授权失败": {
+		"传入account的licenseType：授权成功：": {
+			suite.sqlExecutor,
+			orgUUID03,
+			[]string{userUUID03},
+			license.GetLicenseType(license.LicenseTypeAccount),
+			[]string{userUUID03},
+		},
+		"传入2个用户id，其中A应用scale为1：用户2授权失败，用户1授权成功": {
 			suite.sqlExecutor,
 			orgUUID,
 			[]string{userUUID01, userUUID02},
@@ -689,12 +700,14 @@ func (suite *testSuite) TestBatchGrantLicenseToUsers() {
 		},
 	}
 	for name, tc := range data_suite {
-		_, failedUsers, err := license.BatchGrantLicenseToUsers(tc.sql, tc.orgUUID, tc.userUUIDs, tc.licenseType)
+		succeedUsers, failedUsers, err := license.BatchGrantLicenseToUsers(tc.sql, tc.orgUUID, tc.userUUIDs, tc.licenseType)
 		if strings.Contains(name, "失败") {
 			assert.Nil(suite.T(), err, name)
 			assert.Subset(suite.T(), []string{userUUID01, userUUID02}, failedUsers, name)
 		} else if strings.Contains(name, "报错") {
 			assert.Error(suite.T(), err, name)
+		} else if strings.Contains(name, "成功") {
+			assert.ElementsMatch(suite.T(), tc.expected, succeedUsers, name)
 		}
 	}
 
@@ -722,6 +735,10 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 	suite.ManulAddLicense(orgUUID02, license.LicenseTypeWiki, license.EditionTeam, 10, -1)
 
 	licenseTypes := []license.LicenseType{license.GetLicenseType(license.LicenseTypeProject), license.GetLicenseType(license.LicenseTypeWiki)}
+
+	orgUUID03 := uuid.UUID()
+	userUUID03 := uuid.UUID()
+	suite.ManulAddLicense(orgUUID02, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
 
 	// 开启事务
 	tx, err := dbm.Begin()
@@ -752,14 +769,21 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 
 	// 测试数据
 	data_suite := map[string]test{
-		"传入2个应用licenseType，其中A应用scale已到上限：成功，A应用授权失败，B应用授权成功": {
+		"传入account的licenseType：成功，account应用授权成功": {
+			tx,
+			orgUUID03,
+			userUUID03,
+			[]license.LicenseType{license.GetLicenseType(license.LicenseTypeAccount)},
+			[]int{license.LicenseTypeAccount},
+		},
+		"传入2个应用licenseType，其中A应用scale已到上限：A应用授权失败，B应用授权成功": {
 			tx,
 			orgUUID01,
 			userUUID01,
 			licenseTypes,
 			[]int{license.LicenseTypeProject}, // 失败授权应用
 		},
-		"传入2个应用licenseType，其中A应用已过期：成功，A应用授权失败，B应用授权成功": {
+		"传入2个应用licenseType，其中A应用已过期：A应用授权失败，B应用授权成功": {
 			tx,
 			orgUUID02,
 			userUUID02,
@@ -780,12 +804,12 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 			[]license.LicenseType{licenseTypes[0], license.GetLicenseType(100)},
 			[]int{license.LicenseTypeProject, license.LicenseTypeInvalid},
 		},
-		"传入非空且不存在的userUUID：应用授权成功": {
+		"传入非空且不存在的userUUID：wiki应用授权成功": {
 			tx,
 			orgUUID01,
 			"123user",
 			licenseTypes,
-			[]int{license.LicenseTypeProject},
+			[]int{license.LicenseTypeWiki},
 		},
 		"传入userUUID为空串：返回报错信息": {
 			tx,
@@ -817,12 +841,15 @@ func (suite *testSuite) TestGrantLicensesToUser() {
 		},
 	}
 	for name, tc := range data_suite {
-		_, failedTypes, err := license.GrantLicensesToUser(tc.tx, tc.orgUUID, tc.userUUID, tc.types)
+		succeedTypes, failedTypes, err := license.GrantLicensesToUser(tc.tx, tc.orgUUID, tc.userUUID, tc.types)
 		if strings.Contains(name, "报错") {
 			assert.Error(suite.T(), err, name)
-		} else {
+		} else if strings.Contains(name, "失败") {
 			assert.Nil(suite.T(), err, name)
 			assert.ElementsMatch(suite.T(), tc.expected, failedTypes, name)
+		} else if strings.Contains(name, "成功") {
+			assert.Nil(suite.T(), err, name)
+			assert.ElementsMatch(suite.T(), tc.expected, succeedTypes, name)
 		}
 
 	}
