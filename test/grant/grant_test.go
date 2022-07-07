@@ -925,6 +925,7 @@ func (suite *testSuite) TestReclaimUserGrants() {
 	userUUID := uuid.UUID()
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 10, -1)
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeWiki, license.EditionTeam, 10, -1)
+	suite.ManulAddLicense(orgUUID, license.LicenseTypeAccount, license.EditionEnterprise, 0, -1)
 
 	licenseTypes := []license.LicenseType{license.GetLicenseType(license.LicenseTypeProject), license.GetLicenseType(license.LicenseTypeWiki)}
 	for _, licenseType := range licenseTypes {

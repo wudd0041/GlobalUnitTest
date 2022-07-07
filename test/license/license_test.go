@@ -811,6 +811,11 @@ func (suite *testSuite) TestListExpireInTimeStampRange() {
 	suite.ManulAddLicense(orgUUID, license.LicenseTypeProject, license.EditionTeam, 0, time.Now().Unix()+300)
 	exitLicenseEntity, _ := license.GetOrgLicenseByType(suite.sqlExecutor, orgUUID, license.GetLicenseType(license.LicenseTypeProject))
 
+	orgUUID02 := uuid.UUID()
+	suite.ManulAddLicense(orgUUID02, license.LicenseTypeProject, license.EditionTeam, 0, time.Now().Unix()+300)
+	suite.ManulAddLicense(orgUUID02, license.LicenseTypeProject, license.EditionEnterprise, 0, time.Now().Unix()+300)
+	exitLicenseEntity02, _ := license.GetOrgLicenseByType(suite.sqlExecutor, orgUUID02, license.GetLicenseType(license.LicenseTypeProject))
+
 	// 测试数据
 	data_suite := map[string]test{
 		"传入起始和终止时间：查询成功，查询所有组织下过期时间在范围时间内的license": {
@@ -824,6 +829,12 @@ func (suite *testSuite) TestListExpireInTimeStampRange() {
 			greaterStartStamp,
 			endStamp,
 			[]*license.LicenseEntity{},
+		},
+		"一个组织同一个时间段，存在两个不同级别的license: 查询成功，返回最高级别的license": {
+			suite.sqlExecutor,
+			startStamp,
+			endStamp,
+			exitLicenseEntity02,
 		},
 	}
 
